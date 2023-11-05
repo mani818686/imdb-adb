@@ -78,9 +78,15 @@ def print():
 def retrieveall():
   try:
     session = driver.session()
-    get_query = "MATCH (m:Movie) RETURN m.title AS title, m.description AS description, m.rating AS rating, m.year AS year,m.votes as votes, m.revenue as revenue"
+    get_query =("MATCH (m:Movie)"
+            "OPTIONAL MATCH (m)<-[:ACTED_IN]-(a:Person)"
+            "OPTIONAL MATCH (m)<-[:Directed]-(d:Person)"
+            "OPTIONAL MATCH (m)-[:IN]->(g:Genres)"
+            "RETURN m.ids as ids, m.title AS title, m.description AS description, m.rating AS rating,collect(DISTINCT a.name) AS actors, collect(DISTINCT d.name) AS directors, collect(DISTINCT g.type) AS genres, m.year as year, m.runtime as runtime,m.votes as votes, m.revenue as revenue"
+            )
     result = list(session.run(get_query))
-    return [{"title": record["title"], "description": record["description"], "rating": record["rating"],"year":record["year"],"votes":record["year"],"revenue":record["revenue"]} for record in result]
+    return [{"ids":record["ids"],"title": record["title"], "description": record["description"], "rating": record["rating"],"year":record["year"],"votes":record["year"],"revenue":record["revenue"],"director":record["directors"],"genres":record["genres"],"actors":record["actors"],"runtime":record["runtime"]} for record in result]
+  
   except Exception as ex:
     response = Response("Error While fetching all movies!!",status=500,mimetype='application/json')
     return response
